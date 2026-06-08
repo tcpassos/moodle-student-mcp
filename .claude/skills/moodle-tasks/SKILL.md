@@ -33,9 +33,9 @@ Uses the `moodle-student` MCP tools (and, for planning, the Read tool via the
 6. **Find announced dates.** When assignments lack a due date, professors
    usually post deadlines/presentation dates as plain text in the announcements
    forum. Call `list_forums([course_id])`, pick the forum with `type == "news"`
-   (usually "Avisos"), and `get_forum_discussions(forum_id)` to read them.
+   (the news/announcements forum), and `get_forum_discussions(forum_id)` to read it.
 7. **Prioritize and present.** Show a clear table: task, course, due date (or
-   "announced in Avisos: <date>" / "no date"), status (submitted / pending /
+   "announced (news forum): <date>" / "no date"), status (submitted / pending /
    graded). Sort by due date. Use **absolute dates** and call out anything
    overdue or due within 48h.
 8. **Plan (on request).** For the next deadline, pull the assignment's material
@@ -43,10 +43,10 @@ Uses the `moodle-student` MCP tools (and, for planning, the Read tool via the
    realistic step-by-step plan with time estimates up to the due date.
 
 ## Notes
-- Always reply to the user in **Portuguese (pt-BR)**.
+- Reply in the user's language.
 - Course names from Moodle are verbose (they embed class code, weekday, time,
   professor); show a short, clean course label in tables.
 - Items with no due date won't appear in get_upcoming_deadlines — that's why
-  steps 5–6 cross-check submission status and the "Avisos" forum. Always do this
+  steps 5–6 cross-check submission status and the news/announcements forum. Always do this
   for a complete picture; never rely on the timeline alone.
 - Never expose the Moodle token.

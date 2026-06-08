@@ -1,20 +1,21 @@
 """Obtain the Moodle Web Services token (official mobile-app service).
 
-Two flows:
+Works with any login method:
 
-1) SSO (Microsoft/Google) — e.g. Unisinos. There is no local password, so we
-   use the browser flow (launch.php): the script opens a browser, you log in
-   normally, and it captures the `moodlemobile://token=...` redirect.
+1) Local password — if your account has a password Moodle validates directly,
+   use --username and --password.
 
-2) Local password — only if your account has a password directly in Moodle:
-   --username and --password.
+2) SSO (SAML/CAS/OAuth, e.g. Google or Microsoft) — there is no local password,
+   so use the browser flow (launch.php): a browser opens, you log in normally,
+   and the script captures the `moodlemobile://token=...` redirect.
 
 It then validates the token and writes MOODLE_URL/MOODLE_TOKEN into .env.
 
 Modes:
-  --browser   automatic capture via Playwright (recommended for SSO)
-  --paste     decode a moodlemobile://token=... URL you already captured
-  (default)   print the launch.php link and read the pasted URL from stdin
+  --browser              automatic capture via Playwright (recommended for SSO)
+  --username/--password  local-password accounts
+  --paste                decode a moodlemobile://token=... URL you already have
+  (default)              print the launch.php link and read the pasted URL
 """
 
 from __future__ import annotations
@@ -79,7 +80,7 @@ def password_flow(base: str, username: str, password: str) -> str:
         return data["token"]
     raise SystemExit(
         f"Failed ({data.get('errorcode', '?')}): {data.get('error', data)}\n"
-        "If your account is SSO (Microsoft/Google), use the browser flow "
+        "If your account is SSO (SAML/CAS/OAuth), use the browser flow "
         "(run with --browser, or without --username/--password)."
     )
 
@@ -120,7 +121,7 @@ def browser_flow(base: str, timeout: int = 300) -> str:
             pass
 
     print("\nOpening the browser... log in normally with your institution")
-    print("(Microsoft, with MFA if any). The token is captured automatically.\n")
+    print("(your institution's login, MFA if any). The token is captured automatically.\n")
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=False)
@@ -190,7 +191,7 @@ def write_env(base: str, token: str, path: Path) -> None:
 
 
 def _prompt_browser_flow(base: str) -> str:
-    print("\n=== SSO flow (Microsoft/Google) ===")
+    print("\n=== SSO flow (SAML/CAS/OAuth) ===")
     print("1) Open this link in your browser (already logged in at your school):\n")
     print("   " + base.rstrip("/") + LAUNCH_PATH + "\n")
     print("2) Log in normally. At the end the browser will TRY to open a link")
@@ -210,7 +211,7 @@ def main():
     parser.add_argument(
         "--url",
         required=True,
-        help="Moodle base URL, e.g. https://www.moodle.unisinos.br",
+        help="Moodle base URL, e.g. https://your-moodle-site",
     )
     parser.add_argument(
         "--browser",

@@ -88,8 +88,8 @@ def _course_folder(client: MoodleClient, course_id: int) -> str:
         for course in client.call("core_enrol_get_users_courses", userid=client.userid):
             if course.get("id") == course_id:
                 label = course.get("shortname") or course.get("fullname") or ""
-                # Some sites (e.g. Unisinos) repeat the verbose name with class
-                # code/time on later lines — keep just the readable first line.
+                # Some sites repeat the verbose name with class code/time on
+                # later lines — keep just the readable first line.
                 label = label.split("\n")[0].strip()
                 return _safe_name(f"{course_id} - {label}")
     except Exception:

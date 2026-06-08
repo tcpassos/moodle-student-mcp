@@ -30,7 +30,7 @@ Uses the `moodle-student` MCP tools plus the built-in Read tool.
    `list_assignments` / `get_submission_status` to tie it to the deadline.
 
 ## Notes
-- Always reply to the user in **Portuguese (pt-BR)**.
+- Reply in the user's language.
 - Files land under `materials/<course>/`; mention which files you actually read.
 - Never print or expose the Moodle token.
 - If `list_files` is empty, the course may use links/labels instead of files —

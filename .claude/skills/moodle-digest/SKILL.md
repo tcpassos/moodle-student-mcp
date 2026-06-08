@@ -18,7 +18,7 @@ Uses the `moodle-student` MCP tools, plus Read/Write for delta state.
    snapshot) and report only **deltas** since then. If it doesn't exist, use a
    **7-day lookback** (the user may override the window).
 2. **Announcements.** For each course: `list_forums([course_id])`, take the
-   forum with `type == "news"` (usually "Avisos"), then
+   forum with `type == "news"` (the news/announcements forum), then
    `get_forum_discussions(forum_id)`. Report posts whose `created` is within the
    window / not already seen. These often hide real deadlines (dates in text).
 3. **Upcoming deadlines.** `get_upcoming_deadlines(days=14)`.
@@ -29,16 +29,16 @@ Uses the `moodle-student` MCP tools, plus Read/Write for delta state.
 5. **New / changed grades.** `get_grades(course_id)` per course; compare against
    the snapshot in state and flag items newly graded or changed.
 6. **Present the digest**, grouped and concise:
-   - ⏰ **Prazos** (sort by date; flag <48h or overdue first)
-   - 📝 **Não enviado** (drafts / never-submitted)
-   - 🆕 **Avisos novos** (1-line summary + any date found in the text)
-   - 📊 **Notas novas**
+   - ⏰ **Deadlines** (sort by date; flag <48h or overdue first)
+   - 📝 **Not submitted** (drafts / never-submitted)
+   - 🆕 **New announcements** (1-line summary + any date found in the text)
+   - 📊 **New grades**
    Lead with the most urgent. Keep it a briefing, not a data dump.
 7. **Save state.** Write `digest_state.json` with this run's timestamp, the seen
    discussion dates, and the grade snapshot, so the next run shows true deltas.
 
 ## Notes
-- Always reply to the user in **Portuguese (pt-BR)**, with absolute dates.
+- Reply in the user's language, with absolute dates.
 - To automate: suggest the user run this via `/schedule` (e.g., weekly Monday
   morning) or `/loop`. The MCP server must be reachable when it runs.
 - `digest_state.json` is git-ignored — never commit it, and never expose the

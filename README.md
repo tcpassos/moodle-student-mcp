@@ -6,8 +6,9 @@ uses the official Moodle mobile-app web service (`moodle_mobile_app`) with a
 personal token, so it only sees what you already see: your courses, topics,
 assignments, deadlines, grades, forums, and downloadable files.
 
-> Tested against **Unisinos** (`https://www.moodle.unisinos.br`): web services
-> are **enabled** and login is **Microsoft SSO (Entra/SAML2)**.
+> Works with any Moodle site that has the official mobile app / web services
+> enabled, and with any login method — a local password, or SSO via SAML/CAS/
+> OAuth (e.g. Google or Microsoft).
 
 ## Tools
 
@@ -36,7 +37,7 @@ Project skills under `.claude/skills/`:
   forum for announced dates).
 - **`/moodle-materials`** — download a course's PDFs/slides/notebooks and
   analyze them by reading them natively.
-- **`/moodle-grades`** — grades across courses, GA/GB standing, and what's
+- **`/moodle-grades`** — grades across courses, current standing, and what's
   needed to reach a target.
 - **`/moodle-digest`** — proactive briefing of what's new and what's coming
   (announcements, deadlines, unsubmitted work, new grades); pairs with
@@ -57,25 +58,38 @@ pip install -e ".[browser]"            # [browser] enables automatic token captu
 python -m playwright install chromium  # only needed for the --browser flow
 ```
 
-## 2. Get the token (Microsoft SSO — the Unisinos case)
+## 2. Get the token
 
-Because login is via Microsoft, there is **no local password** in Moodle, so the
-username/password method does not work. Use the **browser flow**.
+The server needs a Web Services token for the official mobile-app service.
+Pick the method that matches how you log in to Moodle.
 
-### Option A — automatic (recommended)
+### Local-password account
+
+If you sign in to Moodle with a username and password it validates directly:
 
 ```powershell
-python -m moodle_student_mcp.token_helper --url https://www.moodle.unisinos.br --browser
+python -m moodle_student_mcp.token_helper --url https://your-moodle-site --username USER --password PASS
 ```
 
-A Chromium window opens; log in normally (Microsoft + MFA). The script
-intercepts the `moodlemobile://token=...` redirect, validates the token and
-writes it to `.env`. You'll see `✅ Token OK! Logged in as: <your name>`.
+### SSO account (SAML / CAS / OAuth — e.g. Google or Microsoft)
 
-### Option B — manual (no Playwright)
+SSO accounts have no local password, so use the **browser flow** — the same way
+the official Moodle app authenticates.
+
+**Automatic (recommended)** — opens a browser and captures the token for you:
 
 ```powershell
-python -m moodle_student_mcp.token_helper --url https://www.moodle.unisinos.br
+python -m moodle_student_mcp.token_helper --url https://your-moodle-site --browser
+```
+
+A Chromium window opens; log in normally (your institution's login, MFA if any).
+The script intercepts the `moodlemobile://token=...` redirect, validates the
+token and writes it to `.env`. You'll see `✅ Token OK! Logged in as: <your name>`.
+
+**Manual (no Playwright):**
+
+```powershell
+python -m moodle_student_mcp.token_helper --url https://your-moodle-site
 ```
 
 It prints a `.../admin/tool/mobile/launch.php?...` link. Open it (logged in),
@@ -83,20 +97,22 @@ finish the login; the browser then tries to open `moodlemobile://token=...`.
 Capture it via `F12 → Network → Preserve log → launch.php → Location`, and paste
 it back. (`--paste "moodlemobile://token=..."` skips the prompt.)
 
-> **Local-password accounts** (other schools): use
-> `--username USER --password PASS` instead of the browser flow.
+> Already have a token (e.g. from Moodle → *Preferences → Security keys*)? Pass
+> it directly with `--paste <token>`.
 
 ## 3. Connect to Claude
 
 ### Claude Code
 
-A `.mcp.json` already exists at the project root, pointing at the venv Python:
+Create a `.mcp.json` at the project root (copy `.mcp.json.example`) pointing at
+your venv's Python with an **absolute** path (on macOS/Linux use
+`.venv/bin/python`):
 
 ```json
 {
   "mcpServers": {
     "moodle-student": {
-      "command": "d:/moodle-skill/.venv/Scripts/python.exe",
+      "command": "<path-to-project>/.venv/Scripts/python.exe",
       "args": ["-m", "moodle_student_mcp"]
     }
   }
@@ -115,7 +131,7 @@ Edit `%APPDATA%\Claude\claude_desktop_config.json`:
 {
   "mcpServers": {
     "moodle-student": {
-      "command": "d:/moodle-skill/.venv/Scripts/python.exe",
+      "command": "<path-to-project>/.venv/Scripts/python.exe",
       "args": ["-m", "moodle_student_mcp"]
     }
   }

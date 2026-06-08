@@ -1,6 +1,6 @@
 ---
 name: moodle-grades
-description: Show the student's grades across courses and compute current standing and what's needed to pass or hit a target. Use when the user asks about grades, marks, GA/GB/GC, current average, "am I passing", or "what do I need on the final".
+description: Show the student's grades across courses and compute current standing and what's needed to pass or hit a target. Use when the user asks about grades, marks, current average, "am I passing", or "what do I need on the final".
 ---
 
 # Moodle: grades and projections
@@ -17,24 +17,23 @@ Uses the `moodle-student` MCP tools.
    `get_grades(course_id)`. Present a per-course table: item, grade/max,
    percentage, weight, feedback. Separate **graded** items from **empty**
    (not yet graded / pending) ones.
-3. **Surface the GA/GB structure.** Unisinos courses are scored by *Grau A (GA)*
-   and *Grau B (GB)*; the final result is usually their average, with *Grau C
-   (GC)* as a makeup/replacement. Look for category or "Total" rows in the
-   gradebook to report the consolidated GA and GB.
+3. **Surface the overall structure.** Look for category or "Total" rows in the
+   gradebook to report consolidated/term grades. Some institutions split a
+   course into terms or partial grades that average into the final — reflect
+   whatever structure the gradebook actually shows.
 4. **Projection (on request).** If the user asks "what do I need":
-   - Identify the current GA (and any GB items already graded) and the weights
-     shown in the gradebook.
+   - Identify the grades already in and the weights shown in the gradebook.
    - Ask for the **passing/target threshold** if it isn't known (don't assume a
-     fixed number — Unisinos thresholds vary; the *Plano de Ensino* /
-     *Acordo Pedagógico* PDFs in the course state it, and can be read via the
+     fixed number — it varies by institution/course; the syllabus or grading-
+     agreement PDF in the course usually states it, and can be read via the
      `moodle-materials` flow if needed).
-   - Compute the GB (or GC) grade required to reach the target, using the actual
+   - Compute the grade still required to reach the target, using the actual
      weights. Show the arithmetic.
 5. **Highlight risk.** Flag courses where the current standing is below target or
    where many items are still ungraded.
 
 ## Notes
-- Always reply to the user in **Portuguese (pt-BR)**.
+- Reply in the user's language.
 - Only report grades that `get_grades` actually returns; never invent a number.
   If an item is hidden by the teacher or not released, say so.
 - Course names from Moodle are verbose — show a short, clean label in tables.

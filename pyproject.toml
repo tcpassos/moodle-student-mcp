@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Captura automática do token via navegador (fluxo SSO):
+# Automatic token capture via browser (SSO flow):
 #   pip install -e ".[browser]" && python -m playwright install chromium
 browser = ["playwright>=1.40"]
 

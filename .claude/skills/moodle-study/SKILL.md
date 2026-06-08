@@ -1,12 +1,12 @@
 ---
 name: moodle-study
-description: Build a study guide from a course's materials — a summary, key concepts, flashcards and practice questions for a topic or exam. Use when the user wants to study, review, prepare for a test/Grau, or "make me a study guide / flashcards" from Moodle content.
+description: Build a study guide from a course's materials — a summary, key concepts, flashcards and practice questions for a topic or exam. Use when the user wants to study, review, prepare for a test/exam, or "make me a study guide / flashcards" from Moodle content.
 ---
 
 # Moodle: study guide / exam prep
 
 Goal: turn a course's slides and materials into an effective study aid for a
-topic or an upcoming exam (Grau). Builds on the `moodle-materials` flow but is
+topic or an upcoming exam. Builds on the `moodle-materials` flow but is
 aimed at *learning/reviewing*, not just downloading.
 
 Uses the `moodle-student` MCP tools plus the built-in Read tool.
@@ -34,7 +34,7 @@ Uses the `moodle-student` MCP tools plus the built-in Read tool.
    `study/<course>-<topic>.md` so the user keeps it.
 
 ## Notes
-- Always reply to the user in **Portuguese (pt-BR)**.
+- Reply in the user's language.
 - Cite which materials (filenames/slides) you used so the user can go deeper.
 - Base the content on what's actually in the materials; if something isn't
   covered, say so rather than inventing it.
