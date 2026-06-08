@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "moodle-student": {
+      "command": "d:/moodle-skill/.venv/Scripts/python.exe",
+      "args": ["-m", "moodle_student_mcp"]
+    }
+  }
+}

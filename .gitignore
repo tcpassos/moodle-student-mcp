@@ -1,0 +1,22 @@
+# Credentials — NEVER commit
+.env
+.mcp.json
+
+# Downloaded course materials
+materials/
+
+# Generated study guides
+study/
+
+# moodle-digest delta state
+digest_state.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
