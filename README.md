@@ -234,6 +234,9 @@ npm run build
 node --env-file=.env scripts/smoke.mjs   # exercise every tool against a real Moodle
 ```
 
+Inside this repository, run the CLI as `node dist/cli.js <command>`: here
+`npx @tcpassos/moodle-student-mcp` resolves to the local folder (see below).
+
 Release checklist: bump the version in `package.json`, `.claude-plugin/plugin.json`,
 `.claude-plugin/marketplace.json`, `plugin.json`, `gemini-extension.json` and the
 `npx` version range in the manifests, then `npm publish --access public`.
