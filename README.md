@@ -127,6 +127,11 @@ repository's `.claude/skills/`. Environment variables are readable by anything
 running in the session, Claude included, so keep the environment personal and
 don't ask Claude to print them.
 
+The environment's network secrets (**Add secret**) would keep the token out of
+the session, but they can't carry it: they only add it to an HTTP header
+(token or username and password), and Moodle reads the token only from the
+request parameters (`wstoken`, `token`).
+
 ### 2b. Other cloud, CI and remote setups
 
 Run the server with `npx -y @tcpassos/moodle-student-mcp` and set these
