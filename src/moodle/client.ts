@@ -98,9 +98,20 @@ export class MoodleClient {
         signal: AbortSignal.timeout(this.#timeoutMs),
       });
     } catch (error) {
-      throw new Error(this.redact(`Could not reach Moodle at ${this.siteUrl}: ${(error as Error).message}`));
+      throw new Error(
+        this.redact(
+          `Could not reach Moodle at ${this.siteUrl}: ${(error as Error).message}. If this runs in a sandbox with ` +
+            `restricted network access (e.g. Claude Code on the web), allow ${new URL(this.siteUrl).host} in the ` +
+            "environment's network settings.",
+        ),
+      );
     }
-    if (!response.ok) throw new Error(`Moodle answered HTTP ${response.status} for ${wsfunction}`);
+    if (!response.ok) {
+      throw new Error(
+        `Moodle answered HTTP ${response.status} for ${wsfunction}.` +
+          (response.status === 403 ? " A sandbox network allowlist may be blocking the site." : ""),
+      );
+    }
     const data = await response.json();
     const moodleError = moodleErrorFrom(data);
     if (moodleError) throw moodleError;

@@ -12,14 +12,24 @@ login method: a Moodle password, or SSO (Microsoft, Google, SAML, CAS) with MFA.
 
 Requires **Node.js 22+**.
 
-## Install
+## Two ways to use it
 
-Pick your assistant. The plugin installs the MCP server plus the study and
+| | On your computer | In the cloud |
+|---|---|---|
+| Where the assistant runs | Claude Code, Claude Desktop, Copilot CLI, Codex, Gemini CLI, Cursor, ... on your machine | Claude Code on the web, CI, remote servers, containers |
+| Install | The plugin (or the MCP server) | A `.mcp.json` in the repository, or the environment's MCP config |
+| Sign in | A browser window opens; sign in as usual | Sign in once on your computer and pass the token as a secret |
+
+## Use it on your computer
+
+### 1. Install
+
+Pick your assistant. The plugin brings the MCP server plus the study and
 planning [skills](#skills).
 
 | Assistant | Command |
 |---|---|
-| Claude Code (plugin) | `claude plugin marketplace add tcpassos/moodle-student-mcp`<br>`claude plugin install moodle-student@moodle-student-mcp` |
+| Claude Code (plugin) | `claude plugin marketplace add tcpassos/moodle-student-mcp`<br>`claude plugin install moodle-student@moodle-student-mcp`<br>(or `/plugin marketplace add …` and `/plugin install …` inside a session) |
 | Claude Code (server only) | `claude mcp add moodle-student -- npx -y @tcpassos/moodle-student-mcp` |
 | GitHub Copilot CLI | `copilot plugin install tcpassos/moodle-student-mcp` |
 | OpenAI Codex | `codex plugin marketplace add tcpassos/moodle-student-mcp`, then `/plugins` |
@@ -38,54 +48,103 @@ Any other MCP client (Claude Desktop, Cursor, VS Code, ...):
 }
 ```
 
-> On native Windows, some clients need `npx` wrapped as
+> If a client on native Windows cannot start `npx`, use
 > `"command": "cmd", "args": ["/c", "npx", "-y", "@tcpassos/moodle-student-mcp"]`.
+> Claude Code runs plain `npx` fine.
 
-## Sign in
+### 2. Sign in
 
-Just ask your assistant something like *"connect to my Moodle"* or *"what's due
-this week?"*. When it isn't signed in yet, it calls the `login` tool, asking you
-for your Moodle address the first time:
+Ask your assistant something like *"connect to my Moodle"* or *"what's due this
+week?"*. The first time, it asks for your Moodle address and calls the `login`
+tool, which opens a browser window (Chrome, Edge, Brave, Chromium or Vivaldi,
+whichever is installed; nothing is downloaded). Sign in as usual, SSO and MFA
+included. The window closes and you're done.
 
-- **On a computer with a browser**, a browser window opens (Chrome, Edge,
-  Brave, Chromium or Vivaldi, whichever is installed; nothing is downloaded).
-  Sign in as usual, SSO and MFA included. The window closes and you're done.
-- **Without a browser** (cloud sandboxes, SSH, containers), the assistant gives
-  you a link. Open it on any device (your laptop or phone), sign in to Moodle,
-  and paste back the short code it shows (`msmcp1.…`).
+Prefer the terminal? Run `npx -y @tcpassos/moodle-student-mcp login`.
 
-Prefer the terminal? Run:
-
-```bash
-npx -y @tcpassos/moodle-student-mcp login
-```
-
-Your Moodle password and token never pass through the chat: the browser
-flow hands the token straight to the server, and the link code is encrypted so
-that only your server can open it. The token is kept in your operating system's
-credential store (Windows Credential Manager, macOS Keychain, Linux Secret
-Service), or in a private file (`0600`) where none is available. It is never
-written into your project.
-
+Your Moodle password and token never pass through the chat. The token is kept
+in your operating system's credential store (Windows Credential Manager, macOS
+Keychain, Linux Secret Service), or in a private file (`0600`) where none is
+available. It is never written into your project.
 `npx -y @tcpassos/moodle-student-mcp status` shows who is signed in, and
 `logout` removes the saved sign-in.
 
-### Cloud, CI and other non-interactive setups
+## Use it in the cloud
 
-Set environment variables instead of signing in:
+Signing in needs a browser this program controls, because Moodle only hands
+its token to the mobile app's `moodlemobile://` links. So remote environments
+are *configured* instead: you sign in once on your own computer and give the
+environment the token as a secret.
+
+### 1. Get the token on your computer
+
+```bash
+npx -y @tcpassos/moodle-student-mcp login
+npx -y @tcpassos/moodle-student-mcp token
+```
+
+`token` copies two lines to the clipboard, `MOODLE_URL=…` and `MOODLE_TOKEN=…`,
+without showing the token (`--print` shows it, in a terminal only).
+
+Moodle tokens last **12 weeks** by default (each site may change this). When the
+tools report an expired sign-in, run these two commands again and update the
+secret.
+
+### 2a. Claude Code on the web
+
+Cloud sessions don't load your local MCP servers or plugins; they load the
+`.mcp.json` committed in the repository the session works on. One-time setup:
+
+1. In that repository, commit this `.mcp.json`. It also works on your
+   computer: when the variables are not set, the server ignores the
+   placeholders and uses your saved sign-in.
+
+   ```json
+   {
+     "mcpServers": {
+       "moodle-student": {
+         "command": "npx",
+         "args": ["-y", "@tcpassos/moodle-student-mcp"],
+         "env": {
+           "MOODLE_URL": "${MOODLE_URL}",
+           "MOODLE_TOKEN": "${MOODLE_TOKEN}"
+         }
+       }
+     }
+   }
+   ```
+
+2. At [claude.ai/code](https://claude.ai/code), edit the environment you use:
+   - **Environment variables**: paste the two lines from `token`.
+   - **Network access**: choose **Custom**, add your Moodle host (e.g.
+     `www.moodle.unisinos.br`) and keep **Also include default list of common
+     package managers** checked, so `npx` can download the server.
+3. Start a new session and ask about your Moodle. New values reach a session
+   when it is created.
+
+To also get the [skills](#skills) there, copy the `skills/` folders into the
+repository's `.claude/skills/`. Environment variables are readable by anything
+running in the session, Claude included, so keep the environment personal and
+don't ask Claude to print them.
+
+### 2b. Other cloud, CI and remote setups
+
+Run the server with `npx -y @tcpassos/moodle-student-mcp` and set these
+environment variables (as secrets); they take precedence over a saved sign-in:
 
 | Variables | When |
 |---|---|
-| `MOODLE_URL` + `MOODLE_TOKEN` (or `MOODLE_TOKEN_FILE`) | Any account. Get the token on a computer where you signed in with `npx -y @tcpassos/moodle-student-mcp token` and store it as a secret. |
-| `MOODLE_URL` + `MOODLE_USERNAME` + `MOODLE_PASSWORD` | Accounts with a Moodle password (not SSO). The token is fetched and refreshed automatically. |
+| `MOODLE_URL` + `MOODLE_TOKEN` (or `MOODLE_TOKEN_FILE`) | Any account, including SSO |
+| `MOODLE_URL` + `MOODLE_USERNAME` + `MOODLE_PASSWORD` | Accounts with a Moodle password (not SSO); the token is fetched and refreshed automatically |
 
-Environment credentials take precedence over a saved sign-in.
+If the environment restricts outbound traffic, allow your Moodle host (and the
+npm registry, for `npx`).
 
 ## Tools
 
 | Tool | What it does |
 |---|---|
-| `login` | Sign in (browser window, or a link for another device) |
+| `login` | Sign in through a browser window (explains the cloud setup where there is no screen) |
 | `auth_status` | Who is signed in, on which site, and where the credential comes from |
 | `logout` | Remove the saved sign-in |
 | `whoami` | Your name, site, Moodle version and the time zone used for dates |
@@ -129,11 +188,9 @@ All optional.
 | `MOODLE_URL` | from the saved sign-in | Moodle address |
 | `MOODLE_DOWNLOAD_DIR` | `./materials` (or `~/moodle-materials`) | Where `download_files` saves files |
 | `MOODLE_TIMEZONE` | your Moodle profile zone | IANA zone for dates |
-| `MOODLE_LOGIN_METHOD` | `auto` | `browser` or `link` to force a sign-in method |
 | `MOODLE_BROWSER` | auto-detected | Path to a Chromium-based browser for sign-in |
 | `MOODLE_CREDENTIAL_STORE` | `auto` | `keychain` or `file` |
 | `MOODLE_STUDENT_MCP_HOME` | OS config folder | Where the session and file store live |
-| `MOODLE_LOGIN_HELPER_URL` | this project's GitHub Pages | Self-hosted copy of [`docs/login`](docs/login) |
 
 ## Security and limits
 
@@ -141,14 +198,16 @@ All optional.
   permissions. `download_files` only fetches files listed in the course, so the
   token is never sent anywhere else.
 - **The token is a password.** It never appears in tool results, logs or error
-  messages, and `token` refuses to print it unless it's run directly in a
-  terminal. To revoke it: Moodle → *Preferences → Security keys*.
-- **How link sign-in works.** The server makes a one-time P-256 key pair and
-  puts the public key in the link's `#fragment`, which browsers never send to
-  any server. The [helper page](docs/login) (static, no backend) sends you to
-  Moodle's `launch.php`. Moodle hands the token back to the page, which encrypts
-  it (ECDH + HKDF-SHA256 + AES-256-GCM) into the code you paste. Codes expire
-  after 15 minutes and work only once.
+  messages. `token` copies it to the clipboard and only prints it with
+  `--print` in a real terminal. To revoke it: Moodle → *Preferences → Security
+  keys*.
+- **How sign-in works.** The server opens Moodle's mobile-app sign-in page
+  (`admin/tool/mobile/launch.php`) in a throwaway browser profile, reads the
+  token from Moodle's answer over the DevTools protocol, checks that it is
+  signed for this site and this attempt (`md5(wwwroot + passport)`) and closes
+  the browser. Moodle only hands this token to its app's `moodlemobile://`
+  links, which no web page can receive, so signing in needs a browser this
+  program controls: there is no "open a link on your phone" sign-in.
 - **Acceptable use.** Automated access to your university's Moodle, even
   read-only, may fall under its IT policy. Keep request volumes modest. Admins
   can see token usage in the web service logs.
@@ -159,8 +218,9 @@ All optional.
 |---|---|
 | "Not signed in" | Ask the assistant to sign in, or run `npx -y @tcpassos/moodle-student-mcp login` |
 | "does not allow the Moodle mobile app service" | The site admin disabled mobile web services |
-| Browser window doesn't open | No Chromium-based browser found: set `MOODLE_BROWSER`, or use `MOODLE_LOGIN_METHOD=link` |
-| Link page shows no code | Allow the "web+moodlestudent" prompt, or copy the "launch the app" link on the Moodle page into the sign-in page |
+| "This environment has no screen" | Cloud sandbox, SSH or container: see [Use it in the cloud](#use-it-in-the-cloud) |
+| Browser window doesn't open | No Chromium-based browser found: install Chrome or Edge, or set `MOODLE_BROWSER` |
+| Worked for weeks, now "expired" | Moodle tokens last 12 weeks by default: sign in again (and run `token` again for cloud secrets) |
 | "Moodle rejected the username/password" | The account uses SSO and has no Moodle password: use `login` instead |
 | A tool returns an empty list | Not enrolled, or no data in that course |
 
@@ -173,10 +233,6 @@ npm run typecheck
 npm run build
 node --env-file=.env scripts/smoke.mjs   # exercise every tool against a real Moodle
 ```
-
-The helper page in `docs/login/` is plain static HTML/JS served by GitHub Pages
-(*Settings → Pages → Deploy from branch → `main` / `docs`*). Its crypto
-lives in `docs/login/login.js` and is covered by the Node tests.
 
 Release checklist: bump the version in `package.json`, `.claude-plugin/plugin.json`,
 `.claude-plugin/marketplace.json`, `plugin.json`, `gemini-extension.json` and the

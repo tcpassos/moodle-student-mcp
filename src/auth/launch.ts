@@ -4,17 +4,17 @@
  * After the user signs in, Moodle sends the browser to
  * `<urlscheme>://token=BASE64`, where BASE64 encodes
  * `md5(wwwroot + passport):::TOKEN[:::PRIVATETOKEN]`. With `confirmed=1`
- * Moodle renders a page with that link instead of a bare redirect, which lets
- * a web page receive it through a registered protocol handler, or the user
- * copy it by hand.
+ * Moodle renders a page holding that link instead of a bare redirect, which
+ * the browser login reads over the DevTools protocol.
+ *
+ * Sites force the scheme to `moodlemobile` by default (tool_mobile's
+ * forcedurlscheme), so no web page can be registered to receive the link;
+ * that is why signing in needs a browser this program controls.
  */
 
 import { createHash, randomBytes } from "node:crypto";
 
 export const MOBILE_SERVICE = "moodle_mobile_app";
-
-/** Scheme the link-login helper page registers with navigator.registerProtocolHandler. */
-export const HANDLER_SCHEME = "web+moodlestudent";
 
 export const TOKEN_LINK_PATTERN = /[a-z][a-z0-9+.-]*:\/\/token=([A-Za-z0-9+/=_-]+)/i;
 
@@ -56,13 +56,6 @@ export function decodePayload(base64: string): LaunchPayload | null {
 export function extractPayload(text: string): LaunchPayload | null {
   const match = TOKEN_LINK_PATTERN.exec(text);
   return match ? decodePayload(match[1]!) : null;
-}
-
-/** Plain text form used inside the encrypted login code: `siteid:::token`. */
-export function parsePlainPayload(text: string): LaunchPayload | null {
-  const [siteId, token] = text.split(":::");
-  if (!siteId || !token || !/^[A-Za-z0-9]+$/.test(token)) return null;
-  return { siteId, token };
 }
 
 /**

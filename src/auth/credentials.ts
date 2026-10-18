@@ -23,8 +23,8 @@ export interface ActiveCredential {
 }
 
 export const NOT_SIGNED_IN_HINT =
-  "Call the `login` tool to sign in: it opens a browser window where the user signs in to Moodle, " +
-  "or, when no browser can be shown here, returns a link the user can open on any device. " +
+  "Call the `login` tool to sign in: it opens a browser window where the user signs in to Moodle " +
+  "(or explains how to configure this environment when it has no screen). " +
   "Never ask the user to type their Moodle password or token into the chat.";
 
 export class NotSignedInError extends Error {

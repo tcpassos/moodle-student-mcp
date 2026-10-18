@@ -16,27 +16,31 @@ without any password or token passing through the chat.
    address of their Moodle (for example `https://moodle.example.edu`). The home
    page they open in the browser is fine; the server finds the site from it.
 3. **Start the sign-in.** Call `login` with `site_url` (omit it if the site is
-   already known). Then follow the `status` it returns:
+   already known). Then:
    - `signed_in` — done. Confirm with the name it reports.
    - `waiting_for_browser` — a browser window opened on the user's computer.
      Ask them to sign in there as usual (SSO, Microsoft/Google, MFA all work),
      then call `login` again with no arguments to keep waiting.
-   - `link` — this machine cannot show a browser (cloud sandbox, SSH, container).
-     Give the user the `url`, and ask them to open it on any device, sign in to
-     Moodle, and paste back the code the page shows (it starts with `msmcp1.`).
-     Then call `login` with `code` set to what they pasted.
+   - An error saying this environment has no screen (cloud sandbox, SSH,
+     container) — sign-in has to happen on the user's own computer. Relay the
+     steps from the error: on a computer with a browser, run
+     `npx -y @tcpassos/moodle-student-mcp login`, then
+     `npx -y @tcpassos/moodle-student-mcp token` (it copies `MOODLE_URL` and
+     `MOODLE_TOKEN` to the clipboard), and paste those into this environment's
+     environment variables / secrets settings. A new session picks them up.
 4. **Verify.** Call `whoami` and tell the user who they are signed in as.
 
 ## Rules
 
 - Never ask the user to type their Moodle password or token into the chat, and
-  never put either in a tool argument, file or command. The `msmcp1.` code is
-  encrypted for this server only, so relaying it is fine.
-- If the link page says the code did not appear automatically, the page itself
-  explains the fallback (copy the "launch the app" link on the Moodle page and
-  paste it into the sign-in page, not into the chat).
+  never put either in a tool argument, file or command. If they paste one
+  anyway, don't use it; tell them it belongs in the environment settings and
+  suggest revoking it later in Moodle (Preferences > Security keys) if the chat
+  is shared.
+- Tokens usually expire after 12 weeks. When Moodle tools report an expired
+  sign-in in a cloud environment, the user repeats `login` + `token` on their
+  computer and updates the secret.
 - To switch accounts, call `logout` and then `login`.
-- Environments without any browser can also be configured with environment
-  variables (`MOODLE_URL` plus `MOODLE_TOKEN`, or `MOODLE_USERNAME` and
-  `MOODLE_PASSWORD` for accounts with a Moodle password). Point the user to the
-  project README for that; don't ask for the values.
+- Accounts with a Moodle password (not SSO) can use `MOODLE_URL`,
+  `MOODLE_USERNAME` and `MOODLE_PASSWORD` instead; point the user to the
+  README, don't ask for the values.

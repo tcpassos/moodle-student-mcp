@@ -1,29 +1,21 @@
 /**
  * Sign-in orchestration shared by the `login` MCP tool and the CLI.
  *
- * - With a browser that the user can see: open it, let them sign in, capture
- *   the token. Zero copy-paste.
- * - Without one (SSH, containers, cloud sandboxes, or no Chromium browser):
- *   hand out a link to the helper page; the user signs in on any device and
- *   pastes back an encrypted code that only this server can open.
- *
- * In both cases the token never passes through the model.
+ * Signing in needs a browser the user can see: we open it, the user signs in
+ * (SSO and MFA included) and the token is captured without any copy-paste or
+ * passing through the model. Environments without one (cloud sandboxes, SSH,
+ * containers, CI) are configured with MOODLE_URL + MOODLE_TOKEN instead,
+ * obtained by signing in once on a computer that has a browser.
  */
 
-import { env } from "../config.js";
+import { APP_NAME, env } from "../config.js";
 import { MoodleClient } from "../moodle/client.js";
 import { browserLogin, canShowBrowserWindow, findBrowser } from "./browser.js";
 import { launchUrl, newPassport, payloadMatchesSite } from "./launch.js";
-import { completeLinkLogin, startLinkLogin } from "./relay.js";
 import { resolveSite, type Site } from "./site.js";
 import { loadSession, saveCredential, type Session } from "./store.js";
 
-export type LoginMethod = "auto" | "browser" | "link";
-
-export type LoginResult =
-  | { status: "signed_in"; session: Session }
-  | { status: "waiting_for_browser"; site: string }
-  | { status: "link"; site: string; url: string; expiresAt: string };
+export type LoginResult = { status: "signed_in"; session: Session } | { status: "waiting_for_browser"; site: string };
 
 export class SiteUrlRequiredError extends Error {
   constructor() {
@@ -32,6 +24,27 @@ export class SiteUrlRequiredError extends Error {
         "(for example https://moodle.example.edu) and call login again with site_url.",
     );
     this.name = "SiteUrlRequiredError";
+  }
+}
+
+export const REMOTE_SETUP_HINT =
+  "Set MOODLE_URL and MOODLE_TOKEN as secret environment variables of this environment. The user gets them on a " +
+  `computer with a browser by running \`npx -y @tcpassos/${APP_NAME} login\` and then ` +
+  `\`npx -y @tcpassos/${APP_NAME} token\`, which copies both lines to the clipboard. The environment must also ` +
+  "be allowed to reach the Moodle host (in Claude Code on the web: Network access > Custom). Accounts with a " +
+  "Moodle password (not SSO) can use MOODLE_URL, MOODLE_USERNAME and MOODLE_PASSWORD instead. Never ask the " +
+  "user to paste the token or password into the chat.";
+
+export class NoBrowserError extends Error {
+  constructor(reason: "no_display" | "no_browser") {
+    super(
+      reason === "no_display"
+        ? "This environment has no screen to show a browser (cloud sandbox, SSH or container), so it cannot sign " +
+            `in to Moodle by itself. ${REMOTE_SETUP_HINT}`
+        : "No Chrome, Edge, Brave, Chromium or Vivaldi installation was found to sign in with. Install one of them, " +
+            `or set MOODLE_BROWSER to the path of a Chromium-based browser. ${REMOTE_SETUP_HINT}`,
+    );
+    this.name = "NoBrowserError";
   }
 }
 
@@ -46,7 +59,6 @@ export async function saveVerifiedToken(siteUrl: string, token: string): Promise
 
 interface BrowserAttempt {
   site: string;
-  startedAt: number;
   promise: Promise<Session>;
   settled: boolean;
   error?: Error;
@@ -68,7 +80,6 @@ function startBrowserAttempt(site: Site): BrowserAttempt {
   const roots = [site.url, site.config.wwwroot, site.config.httpswwwroot].filter((r): r is string => !!r);
   const attempt: BrowserAttempt = {
     site: site.url,
-    startedAt: Date.now(),
     settled: false,
     promise: browserLogin(url).then((payload) => {
       if (!payloadMatchesSite(payload, roots, passport)) {
@@ -98,38 +109,20 @@ async function waitFor(attempt: BrowserAttempt, waitMs: number): Promise<LoginRe
 
 export interface LoginOptions {
   siteUrl?: string;
-  code?: string;
-  method?: LoginMethod;
-  /** How long to wait for a browser sign-in before returning `waiting_for_browser`. */
+  /** How long to wait for the browser sign-in before returning `waiting_for_browser`. */
   waitMs?: number;
 }
 
 export async function login(options: LoginOptions = {}): Promise<LoginResult> {
   const waitMs = options.waitMs ?? 240_000;
 
-  if (options.code) {
-    const { siteUrl, payload } = await completeLinkLogin(options.code);
-    return { status: "signed_in", session: await saveVerifiedToken(siteUrl, payload.token) };
-  }
-
   // A browser window from an earlier call is still open: keep waiting on it.
-  if (browserAttempt && !browserAttempt.settled && options.method !== "link") {
-    return waitFor(browserAttempt, waitMs);
-  }
+  if (browserAttempt && !browserAttempt.settled) return waitFor(browserAttempt, waitMs);
+
+  if (!canShowBrowserWindow()) throw new NoBrowserError("no_display");
+  if (!findBrowser()) throw new NoBrowserError("no_browser");
 
   const target = options.siteUrl ?? env("MOODLE_URL") ?? (await loadSession())?.siteUrl;
   if (!target) throw new SiteUrlRequiredError();
-  const site = await resolveSite(target);
-
-  const method = options.method ?? (env("MOODLE_LOGIN_METHOD") as LoginMethod | undefined) ?? "auto";
-  const browserAvailable = canShowBrowserWindow() && findBrowser() !== null;
-  if (method === "browser" && !findBrowser()) {
-    throw new Error("No Chrome, Edge, Brave, Chromium or Vivaldi installation was found. Use method \"link\" instead.");
-  }
-  if (method === "browser" || (method === "auto" && browserAvailable)) {
-    return waitFor(startBrowserAttempt(site), waitMs);
-  }
-
-  const { url, expiresAt } = await startLinkLogin(site.url);
-  return { status: "link", site: site.url, url, expiresAt };
+  return waitFor(startBrowserAttempt(await resolveSite(target)), waitMs);
 }

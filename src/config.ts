@@ -29,7 +29,7 @@ export function env(name: string): string | undefined {
   return value;
 }
 
-/** Folder holding the saved session, the file-based credential store and pending logins. */
+/** Folder holding the saved session and the file-based credential store. */
 export function configDir(): string {
   const override = env("MOODLE_STUDENT_MCP_HOME");
   if (override) return resolve(override);
@@ -68,11 +68,6 @@ function isUnsuitableWorkingDir(dir: string): boolean {
   return ["/usr", "/bin", "/sbin", "/etc", "/System", "/Applications"].some(
     (d) => normalized === d.toLowerCase() || normalized.startsWith(d.toLowerCase() + "/"),
   );
-}
-
-/** Base URL of the static login helper page used by the link (no-browser) login. */
-export function loginHelperUrl(): string {
-  return env("MOODLE_LOGIN_HELPER_URL") ?? "https://tcpassos.github.io/moodle-student-mcp/login/";
 }
 
 /**

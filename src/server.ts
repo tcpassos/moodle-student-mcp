@@ -8,8 +8,7 @@ import { McpServer, type CallToolResult } from "@modelcontextprotocol/server";
 import * as z from "zod";
 import { APP_NAME, VERSION } from "./config.js";
 import { NotSignedInError } from "./auth/credentials.js";
-import { browserAttemptState, login, SiteUrlRequiredError, type LoginResult } from "./auth/login.js";
-import { clearPendingLogin, loadPendingLogin } from "./auth/relay.js";
+import { browserAttemptState, login, NoBrowserError, SiteUrlRequiredError, type LoginResult } from "./auth/login.js";
 import { MoodleSession } from "./auth/session.js";
 import { clearCredential } from "./auth/store.js";
 import { MoodleError } from "./moodle/client.js";
@@ -17,8 +16,8 @@ import * as tools from "./moodle/tools.js";
 
 const INSTRUCTIONS = `Read-only access to the user's Moodle as a student: courses, contents, assignments, \
 submission status, deadlines, grades, forums/announcements and course files.
-If a tool says the user is not signed in, call \`login\`. It signs the user in without any password or token \
-passing through the chat. Never ask the user to type their Moodle password or token.`;
+If a tool says the user is not signed in, call \`login\`: it opens a browser window where the user signs in, \
+without any password or token passing through the chat. Never ask the user to type their Moodle password or token.`;
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: true } as const;
 
@@ -28,7 +27,9 @@ function json(data: unknown): CallToolResult {
 
 function failure(error: unknown): CallToolResult {
   let text: string;
-  if (error instanceof NotSignedInError || error instanceof SiteUrlRequiredError) text = error.message;
+  if (error instanceof NotSignedInError || error instanceof SiteUrlRequiredError || error instanceof NoBrowserError) {
+    text = error.message;
+  }
   else if (error instanceof MoodleError) text = `Moodle returned an error: ${error.message}`;
   else text = error instanceof Error ? error.message : String(error);
   return { content: [{ type: "text", text }], isError: true };
@@ -52,18 +53,6 @@ function describeLogin(result: LoginResult) {
         message:
           "A browser window is open on this computer for the user to sign in to Moodle. Ask them to finish " +
           "signing in there, then call login again with no arguments to keep waiting (or auth_status to check).",
-      };
-    case "link":
-      return {
-        status: "link",
-        site_url: result.site,
-        url: result.url,
-        expires_at: result.expiresAt,
-        message:
-          "No browser can be opened here. Give the user this link and ask them to open it on any device with " +
-          "a browser, sign in to Moodle, and paste back the code it shows (it starts with msmcp1.). Then call " +
-          "login with `code` set to that code. The code is encrypted for this server only; it is not a password " +
-          "or a token.",
       };
   }
 }
@@ -93,21 +82,16 @@ export function createServer(session = new MoodleSession()): McpServer {
     "login",
     "Sign the user in to Moodle. Call it when another Moodle tool says the user is not signed in, or when the " +
       "user wants to connect or switch accounts. Pass `site_url` the first time (ask the user for their Moodle " +
-      "address if you don't know it). If a browser can be shown on this computer, a window opens, the user signs " +
-      "in there (SSO and MFA work) and this call waits for it. Otherwise it returns a link for the user to open " +
-      "on any device; they get a code starting with `msmcp1.` that you pass back as `code`. The code is encrypted " +
-      "for this server, so it is safe to relay. Never ask for the user's Moodle password or token.",
+      "address if you don't know it). A browser window opens on this computer, the user signs in there (SSO and " +
+      "MFA work) and this call waits for it. In environments without a screen (cloud sandboxes, SSH, containers) " +
+      "it explains how to configure MOODLE_URL and MOODLE_TOKEN instead. Never ask for the user's Moodle password " +
+      "or token.",
     {
       site_url: z.string().optional().describe("Moodle address, e.g. https://moodle.example.edu"),
-      code: z.string().optional().describe("Code shown by the sign-in page in link mode (starts with msmcp1.)"),
-      method: z
-        .enum(["auto", "browser", "link"])
-        .optional()
-        .describe("auto (default): browser when one can be shown here, else link"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    async ({ site_url, code, method }) => {
-      const result = await login({ siteUrl: site_url, code, method });
+    async ({ site_url }) => {
+      const result = await login({ siteUrl: site_url });
       if (result.status === "signed_in") session.reset();
       return describeLogin(result);
     },
@@ -121,11 +105,7 @@ export function createServer(session = new MoodleSession()): McpServer {
     READ_ONLY,
     async () => {
       const browser = browserAttemptState();
-      const pending = await loadPendingLogin();
-      const extra = {
-        ...(browser ? { browser_login: browser } : {}),
-        ...(pending ? { link_login_waiting_for_code_until: pending.expiresAt } : {}),
-      };
+      const extra = browser ? { browser_login: browser } : {};
       try {
         const info = await session.run((ctx) => tools.whoami(ctx));
         return { signed_in: true, source: session.credential?.source, ...info, ...extra };
@@ -138,13 +118,12 @@ export function createServer(session = new MoodleSession()): McpServer {
 
   tool(
     "logout",
-    "Remove the Moodle sign-in saved on this computer (and any half-finished link login). Does not revoke the " +
-      "token on Moodle; the user can do that in Moodle under Preferences > Security keys.",
+    "Remove the Moodle sign-in saved on this computer. Does not revoke the token on Moodle; the user can do " +
+      "that in Moodle under Preferences > Security keys.",
     {},
     { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     async () => {
       const removed = await clearCredential();
-      await clearPendingLogin();
       const source = session.credential?.source;
       session.reset();
       return {
