@@ -1,0 +1,48 @@
+{
+  "name": "@tcpassos/moodle-student-mcp",
+  "version": "0.2.0",
+  "description": "MCP server that lets AI assistants read your Moodle as a student: courses, deadlines, grades, forums and files.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "moodle",
+    "student",
+    "lms"
+  ],
+  "homepage": "https://github.com/tcpassos/moodle-student-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcpassos/moodle-student-mcp.git"
+  },
+  "bugs": "https://github.com/tcpassos/moodle-student-mcp/issues",
+  "author": "Tiago Passos",
+  "type": "module",
+  "bin": {
+    "moodle-student-mcp": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "smoke": "node scripts/smoke.mjs",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.3.1",
+    "zod": "^4.2.0"
+  },
+  "optionalDependencies": {
+    "@napi-rs/keyring": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

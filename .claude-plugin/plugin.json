@@ -1,0 +1,18 @@
+{
+  "name": "moodle-student",
+  "version": "0.2.0",
+  "description": "Read your Moodle as a student: courses, deadlines, grades, announcements and course files, plus skills for task planning, grade projections and study guides.",
+  "author": {
+    "name": "Tiago Passos",
+    "url": "https://github.com/tcpassos"
+  },
+  "homepage": "https://github.com/tcpassos/moodle-student-mcp",
+  "repository": "https://github.com/tcpassos/moodle-student-mcp",
+  "keywords": ["moodle", "student", "lms", "education", "mcp"],
+  "mcpServers": {
+    "moodle-student": {
+      "command": "npx",
+      "args": ["-y", "@tcpassos/moodle-student-mcp@^0.2.0"]
+    }
+  }
+}

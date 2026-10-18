@@ -1,0 +1,20 @@
+{
+  "name": "moodle-student-mcp",
+  "owner": {
+    "name": "Tiago Passos",
+    "url": "https://github.com/tcpassos"
+  },
+  "metadata": {
+    "description": "Moodle tools and skills for students."
+  },
+  "plugins": [
+    {
+      "name": "moodle-student",
+      "source": "./",
+      "description": "Read your Moodle as a student: courses, deadlines, grades, announcements and course files, plus study and planning skills.",
+      "version": "0.2.0",
+      "category": "productivity",
+      "keywords": ["moodle", "student", "lms", "education"]
+    }
+  ]
+}

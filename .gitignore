@@ -1,4 +1,4 @@
-# Credentials — NEVER commit
+# Credentials and local MCP config — NEVER commit
 .env
 .mcp.json
 
@@ -11,12 +11,11 @@ study/
 # moodle-digest delta state
 digest_state.json
 
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-*.egg-info/
+# Node
+node_modules/
 dist/
-build/
-.pytest_cache/
+*.tgz
+
+# Leftovers from the old Python version
+.venv/
+__pycache__/

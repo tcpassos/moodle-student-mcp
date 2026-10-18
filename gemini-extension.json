@@ -1,0 +1,11 @@
+{
+  "name": "moodle-student",
+  "version": "0.2.0",
+  "description": "Read your Moodle as a student: courses, deadlines, grades, announcements and course files, plus study and planning skills.",
+  "mcpServers": {
+    "moodle-student": {
+      "command": "npx",
+      "args": ["-y", "@tcpassos/moodle-student-mcp@^0.2.0"]
+    }
+  }
+}
