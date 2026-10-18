@@ -96,8 +96,8 @@ Cloud sessions don't load your local MCP servers or plugins; they load the
 `.mcp.json` committed in the repository the session works on. One-time setup:
 
 1. In that repository, commit this `.mcp.json`. It also works on your
-   computer: when the variables are not set, the server ignores the
-   placeholders and uses your saved sign-in.
+   computer: when the variables are not set they expand to nothing (`:-`), and
+   the server uses your saved sign-in.
 
    ```json
    {
@@ -106,8 +106,8 @@ Cloud sessions don't load your local MCP servers or plugins; they load the
          "command": "npx",
          "args": ["-y", "@tcpassos/moodle-student-mcp"],
          "env": {
-           "MOODLE_URL": "${MOODLE_URL}",
-           "MOODLE_TOKEN": "${MOODLE_TOKEN}"
+           "MOODLE_URL": "${MOODLE_URL:-}",
+           "MOODLE_TOKEN": "${MOODLE_TOKEN:-}"
          }
        }
      }
