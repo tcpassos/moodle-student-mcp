@@ -237,3 +237,7 @@ node --env-file=.env scripts/smoke.mjs   # exercise every tool against a real Mo
 Release checklist: bump the version in `package.json`, `.claude-plugin/plugin.json`,
 `.claude-plugin/marketplace.json`, `plugin.json`, `gemini-extension.json` and the
 `npx` version range in the manifests, then `npm publish --access public`.
+
+## License
+
+[MIT](LICENSE)

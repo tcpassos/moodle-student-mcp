@@ -16,6 +16,7 @@
   },
   "bugs": "https://github.com/tcpassos/moodle-student-mcp/issues",
   "author": "Tiago Passos",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "moodle-student-mcp": "dist/cli.js"

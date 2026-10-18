@@ -9,6 +9,7 @@
   },
   "homepage": "https://github.com/tcpassos/moodle-student-mcp",
   "repository": "https://github.com/tcpassos/moodle-student-mcp",
+  "license": "MIT",
   "keywords": ["moodle", "student", "lms", "education", "mcp"],
   "extensions": {
     "com.openai": {
