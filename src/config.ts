@@ -4,6 +4,7 @@
  */
 
 import { readFileSync } from "node:fs";
+import { readdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, parse, resolve } from "node:path";
 
@@ -29,18 +30,41 @@ export function env(name: string): string | undefined {
   return value;
 }
 
-/** Folder holding the saved session and the file-based credential store. */
+/**
+ * Folder holding the saved session and the file-based credential store.
+ *
+ * On Windows it is `%USERPROFILE%\.moodle-student-mcp`, not AppData: packaged
+ * (MSIX) apps such as Claude Desktop redirect the files their processes create
+ * under AppData to a private per-app copy that no other program sees, while
+ * the rest of the user profile is written for real.
+ */
 export function configDir(): string {
   const override = env("MOODLE_STUDENT_MCP_HOME");
   if (override) return resolve(override);
+  if (process.platform === "win32") return join(env("USERPROFILE") ?? homedir(), `.${APP_NAME}`);
   const home = homedir();
-  if (process.platform === "win32") {
-    return join(env("APPDATA") ?? join(home, "AppData", "Roaming"), APP_NAME);
-  }
   if (process.platform === "darwin") {
     return join(home, "Library", "Application Support", APP_NAME);
   }
   return join(env("XDG_CONFIG_HOME") ?? join(home, ".config"), APP_NAME);
+}
+
+/**
+ * Where versions before 0.2.1 kept the config folder on Windows, and so may
+ * still hold a sign-in: `%APPDATA%\moodle-student-mcp`, plus the private
+ * copies packaged apps made of it
+ * (`%LOCALAPPDATA%\Packages\<package>\LocalCache\Roaming\moodle-student-mcp`).
+ * Empty elsewhere and when MOODLE_STUDENT_MCP_HOME is set.
+ */
+export async function legacyConfigDirs(): Promise<string[]> {
+  if (process.platform !== "win32" || env("MOODLE_STUDENT_MCP_HOME")) return [];
+  const home = env("USERPROFILE") ?? homedir();
+  const packages = join(env("LOCALAPPDATA") ?? join(home, "AppData", "Local"), "Packages");
+  const packageNames = await readdir(packages).catch(() => [] as string[]);
+  return [
+    join(env("APPDATA") ?? join(home, "AppData", "Roaming"), APP_NAME),
+    ...packageNames.map((name) => join(packages, name, "LocalCache", "Roaming", APP_NAME)),
+  ];
 }
 
 /**

@@ -190,7 +190,11 @@ All optional.
 | `MOODLE_TIMEZONE` | your Moodle profile zone | IANA zone for dates |
 | `MOODLE_BROWSER` | auto-detected | Path to a Chromium-based browser for sign-in |
 | `MOODLE_CREDENTIAL_STORE` | `auto` | `keychain` or `file` |
-| `MOODLE_STUDENT_MCP_HOME` | OS config folder | Where the session and file store live |
+| `MOODLE_STUDENT_MCP_HOME` | `%USERPROFILE%\.moodle-student-mcp` (Windows), `~/Library/Application Support/moodle-student-mcp` (macOS), `~/.config/moodle-student-mcp` (Linux) | Where the session and file store live |
+
+On Windows the folder is outside AppData on purpose: Claude Desktop is a
+packaged (MSIX) app, and files its processes create under AppData go to a
+private copy that terminals and other assistants don't see.
 
 ## Security and limits
 
@@ -217,6 +221,8 @@ All optional.
 | Problem | Likely cause |
 |---|---|
 | "Not signed in" | Ask the assistant to sign in, or run `npx -y @tcpassos/moodle-student-mcp login` |
+| Windows: signed in through Claude Desktop, but a terminal or another assistant says "Not signed in" | Versions before 0.2.1 kept the sign-in under AppData, where Claude Desktop's copy is private to it. 0.2.1 and later use `%USERPROFILE%\.moodle-student-mcp` and pick up the old sign-in by themselves: check with `npx -y @tcpassos/moodle-student-mcp@latest status` |
+| "Found the saved Moodle sign-in … but could not read its token" | The session is saved, but its token is gone from the OS credential store (removed, or saved by another user account) or its token file is missing: sign in again. Where no credential store works, set `MOODLE_CREDENTIAL_STORE=file` before signing in |
 | "does not allow the Moodle mobile app service" | The site admin disabled mobile web services |
 | "This environment has no screen" | Cloud sandbox, SSH or container: see [Use it in the cloud](#use-it-in-the-cloud) |
 | Browser window doesn't open | No Chromium-based browser found: install Chrome or Edge, or set `MOODLE_BROWSER` |

@@ -8,7 +8,7 @@ import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import { APP_NAME, VERSION, configDir } from "./config.js";
-import { resolveCredential } from "./auth/credentials.js";
+import { NotSignedInError, resolveCredential, type ActiveCredential } from "./auth/credentials.js";
 import { login } from "./auth/login.js";
 import { clearCredential, loadSession } from "./auth/store.js";
 import { copyToClipboard } from "./clipboard.js";
@@ -72,10 +72,20 @@ async function loginCommand(args: string[]): Promise<void> {
   say(`Token saved in the ${session.store === "keychain" ? "OS credential store" : `file store under ${configDir()}`}.`);
 }
 
+/** The credential in use, or why there is none, worded for the terminal. */
+async function activeCredential(): Promise<ActiveCredential | string> {
+  try {
+    return (await resolveCredential()) ?? `Not signed in. Run: ${APP_NAME} login`;
+  } catch (error) {
+    if (error instanceof NotSignedInError) return `${error.reason} Run: ${APP_NAME} login`;
+    throw error;
+  }
+}
+
 async function statusCommand(): Promise<void> {
-  const credential = await resolveCredential();
-  if (!credential) {
-    say(`Not signed in. Run: ${APP_NAME} login`);
+  const credential = await activeCredential();
+  if (typeof credential === "string") {
+    say(credential);
     process.exitCode = 1;
     return;
   }
@@ -83,13 +93,13 @@ async function statusCommand(): Promise<void> {
     "core_webservice_get_site_info",
   );
   say(`Signed in as ${info.fullname} (${info.username}) on ${info.sitename} — ${credential.siteUrl}`);
-  say(`Credential source: ${credential.source}`);
+  say(`Credential source: ${credential.source}${credential.savedIn ? ` (${credential.savedIn})` : ""}`);
 }
 
 async function tokenCommand(args: string[]): Promise<void> {
   const { values } = parseArgs({ args, options: { print: { type: "boolean" } } });
-  const credential = await resolveCredential();
-  if (!credential) throw new Error(`Not signed in. Run: ${APP_NAME} login`);
+  const credential = await activeCredential();
+  if (typeof credential === "string") throw new Error(credential);
   const lines = `MOODLE_URL=${credential.siteUrl}\nMOODLE_TOKEN=${credential.token}\n`;
 
   if (values.print) {
