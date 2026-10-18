@@ -20,6 +20,8 @@ export interface ActiveCredential {
   token: string;
   source: CredentialSource;
   session?: Session;
+  /** Folder holding the saved sign-in, for the "saved sign-in" source. */
+  savedIn?: string;
 }
 
 export const NOT_SIGNED_IN_HINT =
@@ -28,9 +30,13 @@ export const NOT_SIGNED_IN_HINT =
   "Never ask the user to type their Moodle password or token into the chat.";
 
 export class NotSignedInError extends Error {
+  /** The message without the hint for the assistant. */
+  readonly reason: string;
+
   constructor(reason = "Not signed in to Moodle.") {
     super(`${reason} ${NOT_SIGNED_IN_HINT}`);
     this.name = "NotSignedInError";
+    this.reason = reason;
   }
 }
 
@@ -81,5 +87,12 @@ export async function resolveCredential(fetchImpl: typeof fetch = globalThis.fet
   const saved = await loadCredential();
   if (!saved) return null;
   if (siteEnv && !sameSite(saved.session.siteUrl, siteEnv)) return null;
-  return { siteUrl: saved.session.siteUrl, token: saved.token, source: "saved sign-in", session: saved.session };
+  if (saved.token === null) throw new NotSignedInError(`${saved.problem} Sign in again to replace it.`);
+  return {
+    siteUrl: saved.session.siteUrl,
+    token: saved.token,
+    source: "saved sign-in",
+    session: saved.session,
+    savedIn: saved.dir,
+  };
 }

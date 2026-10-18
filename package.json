@@ -1,6 +1,6 @@
 {
   "name": "@tcpassos/moodle-student-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server that lets AI assistants read your Moodle as a student: courses, deadlines, grades, forums and files.",
   "keywords": [
     "mcp",
