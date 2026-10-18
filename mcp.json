@@ -4,7 +4,7 @@
     "moodle-student": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@tcpassos/moodle-student-mcp@^0.2.0"]
+      "args": ["-y", "moodle-student-mcp@npm:@tcpassos/moodle-student-mcp@^0.2.0"]
     }
   }
 }

@@ -31,8 +31,8 @@ planning [skills](#skills).
 |---|---|
 | Claude Code (plugin) | `claude plugin marketplace add tcpassos/moodle-student-mcp`<br>`claude plugin install moodle-student@moodle-student-mcp`<br>(or `/plugin marketplace add …` and `/plugin install …` inside a session) |
 | Claude Code (server only) | `claude mcp add moodle-student -- npx -y @tcpassos/moodle-student-mcp` |
-| GitHub Copilot CLI | `copilot plugin install tcpassos/moodle-student-mcp` |
-| OpenAI Codex | `codex plugin marketplace add tcpassos/moodle-student-mcp`, then `/plugins` |
+| GitHub Copilot CLI | `copilot plugin marketplace add tcpassos/moodle-student-mcp`<br>`copilot plugin install moodle-student@moodle-student-mcp` |
+| OpenAI Codex | `codex plugin marketplace add tcpassos/moodle-student-mcp`<br>`codex plugin add moodle-student@moodle-student-mcp`<br>(or `/plugins` inside a session) |
 | Gemini CLI | `gemini extensions install https://github.com/tcpassos/moodle-student-mcp` |
 
 Any other MCP client (Claude Desktop, Cursor, VS Code, ...):
@@ -237,6 +237,12 @@ node --env-file=.env scripts/smoke.mjs   # exercise every tool against a real Mo
 Release checklist: bump the version in `package.json`, `.claude-plugin/plugin.json`,
 `.claude-plugin/marketplace.json`, `plugin.json`, `gemini-extension.json` and the
 `npx` version range in the manifests, then `npm publish --access public`.
+
+The plugin manifests start the server as
+`npx -y moodle-student-mcp@npm:@tcpassos/moodle-student-mcp@^x.y.z`. Hosts
+start plugin servers inside the plugin folder, whose `package.json` has the
+same name, and a plain `npx -y @tcpassos/moodle-student-mcp` there resolves to
+that unbuilt local copy instead of the published package.
 
 ## License
 
